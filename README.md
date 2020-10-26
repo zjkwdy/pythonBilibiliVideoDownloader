@@ -24,3 +24,7 @@ https://github.com/BtbN/FFmpeg-Builds/releases
     
     本脚本依照https://github.com/SocialSisterYi/bilibili-API-collect 提供的api，感谢整理者！
    
+更新日志:
+2020/10/25 1.0版本诞生。
+|
+2020/10/26 1.1版本更新:加入登录依据保存，不用每次都扫码了.
