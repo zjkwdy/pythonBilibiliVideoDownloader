@@ -3,6 +3,8 @@ python比利♂比利视频下载器
 自己星期六闲着写出来的。。
 使用前先
 pip instll qrcode && pip install requests
+建议下载ffmpeg.exe放在同一目录下，用于下载转码成mp4:
+https://github.com/BtbN/FFmpeg-Builds/releases
 
                          //                                                                                     \n
              \\         //                                                                                      \n 
