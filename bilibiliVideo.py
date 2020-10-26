@@ -3,6 +3,13 @@ import json
 import os,time
 import qrcode
 def QRLogin():
+    if os.path.isfile('login.data'):
+        print('发现保存的登录依据,正在尝试登陆')
+        SESSDATA = open('login.data','r').read()
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0','Cookie':'SESSDATA='+SESSDATA}
+        user = requests.get('http://api.bilibili.com/nav',headers=headers).json()
+        print('成功:用户名:'+user['data']['uname'])
+        getVideo(SESSDATA=SESSDATA)
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0'
     }
@@ -17,6 +24,9 @@ def QRLogin():
         auth = requests.post('http://passport.bilibili.com/qrcode/getLoginInfo',headers=headers,data={'oauthKey':oauthKey})
         if auth.json()['code'] == 0:
             print('200 OK AUTHED.')
+            with open('login.data','w') as data:
+                print('正在保存登录依据到login.data')
+                data.write(auth.cookies.get('SESSDATA'))
             getVideo(SESSDATA=auth.cookies.get('SESSDATA'))
             break
         if sec == 10:
@@ -30,7 +40,6 @@ def getVideo(SESSDATA):
         'Cookie':'SESSDATA=' + SESSDATA,
         'Referer':'https://www.bilibili.com'
     }
-    print(SESSDATA)
     vid = input('输入bv号，一定是bv号（因为我懒）:')
     videoInfo = requests.get('http://api.bilibili.com/x/web-interface/view?bvid='+vid,headers=headers).json()
     print('标题:'+videoInfo['data']['title'])
@@ -64,6 +73,7 @@ def getVideo(SESSDATA):
         print('转码中...' + str(cid) + '.mp4')
         os.system('ffmpeg.exe -i ' + str(cid) + '.flv ' + str(cid) + '.mp4')
         os.system('del /f /s /q ' + str(cid) + '.flv')
+    exit()
 
 
     
