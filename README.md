@@ -2,7 +2,7 @@
 python比利♂比利视频下载器
 自己星期六闲着写出来的。。
 使用前先
-pip instll qrcode && pip install requests
+pip instll qrcode && pip install requests && pip install tqdm
 建议下载ffmpeg.exe放在同一目录下，用于下载转码成mp4:
 https://github.com/BtbN/FFmpeg-Builds/releases
 
@@ -26,5 +26,7 @@ https://github.com/BtbN/FFmpeg-Builds/releases
    
 更新日志:
 2020/10/25 1.0版本诞生。
-|
+||||
 2020/10/26 1.1版本更新:加入登录依据保存，不用每次都扫码了.
+||||
+2020/10/27 使用tqdm增加了加载条。。分段视频合并问题将在下一版本提供支持。。
