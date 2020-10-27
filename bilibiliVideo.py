@@ -1,7 +1,7 @@
 import requests,http.cookiejar 
 import json  
 import os,time
-import qrcode
+import qrcode,tqdm
 def QRLogin():
     if os.path.isfile('login.data'):
         print('发现保存的登录依据,正在尝试登陆')
@@ -9,7 +9,7 @@ def QRLogin():
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0','Cookie':'SESSDATA='+SESSDATA}
         user = requests.get('http://api.bilibili.com/nav',headers=headers).json()
         print('成功:用户名:'+user['data']['uname'])
-        getVideo(SESSDATA=SESSDATA)
+        return SESSDATA
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0'
     }
@@ -27,7 +27,7 @@ def QRLogin():
             with open('login.data','w') as data:
                 print('正在保存登录依据到login.data')
                 data.write(auth.cookies.get('SESSDATA'))
-            getVideo(SESSDATA=auth.cookies.get('SESSDATA'))
+                return auth.cookies.get('SESSDATA')
             break
         if sec == 10:
             print('超时！10秒内未检测到您扫描二维码！') 
@@ -60,23 +60,21 @@ def getVideo(SESSDATA):
     '''
     print(qnlist)
     qn = input('输入清晰度对应代码:')
-    videoData = requests.get('http://api.bilibili.com/x/player/playurl?bvid=' + vid + '&cid=' + str(cid) + '&fourk=1' + '&qn=' + qn,headers=headers).json()
-    lista = videoData['data']['durl']
+    videoData = requests.get('http://api.bilibili.com/x/player/playurl?bvid=' + vid + '&cid=' + str(cid) + '&fourk=1' + '&qn=' + qn,headers=headers)
+    lista = videoData.json()['data']['durl']
     print('开始下载....')
     for i in lista:
-        videoStreamUrl = videoData['data']['durl'][lista.index(i)]['url']
+        videoStreamUrl = videoData.json()['data']['durl'][lista.index(i)]['url']
         videoStream = requests.get(videoStreamUrl,headers=headers,stream=True)
-        with open('./'+str(cid)+'.flv','wb+') as video:
-            for chunk in videoStream.iter_content(chunk_size=1024):
+        videoSize = int(int(videoStream.headers['Content-Length'])/1024+0.5)
+        with open('./'+str(cid)+str(lista.index(i))+'.flv','wb+') as video:
+            for chunk in tqdm.tqdm(iterable=videoStream.iter_content(1024),total=videoSize,unit='k',desc=None):
                 if chunk:
                     video.write(chunk)
-        print('转码中...' + str(cid) + '.mp4')
-        os.system('ffmpeg.exe -i ' + str(cid) + '.flv ' + str(cid) + '.mp4')
-        os.system('del /f /s /q ' + str(cid) + '.flv')
-    exit()
-
-
-    
+                    
+        print('转码中...' + str(cid) + str(lista.index(i))+'.mp4')
+        os.system('ffmpeg.exe -i ' + str(cid) + str(lista.index(i))+ '.flv ' + str(cid) + str(lista.index(i))+ '.mp4')
+        os.system('del /f /s /q ' + str(cid) + str(lista.index(i))+'.flv')
 
     
 
@@ -100,8 +98,8 @@ if __name__ == '__main__':
     本python脚本由IMIN制作。QQ:3377911508. 本人只有14岁希望大家多多包涵。。
     感谢SocialSisterYi.
     在工作中使用了https://github.com/SocialSisterYi/bilibili-API-collect.
-    使用前必须安装qrcode requests这两个库。
-    没有建议pip install qrcode && pip install requests
+    使用前必须安装qrcode requests tqdm这三个库。
+    没有建议pip install qrcode && pip install requests && pip install tqdm
     在二维码扫描完成后关闭二维码窗口才能继续。
     在二维码扫描完成后关闭二维码窗口才能继续。
     在二维码扫描完成后关闭二维码窗口才能继续。
@@ -109,4 +107,5 @@ if __name__ == '__main__':
     '''
     print(tips)
     os.system('pause')
-    QRLogin() 
+    SESS=QRLogin()
+    getVideo(SESSDATA=SESS) 
