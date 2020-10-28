@@ -73,8 +73,10 @@ def getVideo(SESSDATA):
                     video.write(chunk)
                     
         print('转码中...' + str(cid) + str(lista.index(i))+'.mp4')
-        os.system('ffmpeg.exe -i ' + str(cid) + str(lista.index(i))+ '.flv ' + str(cid) + str(lista.index(i))+ '.mp4')
-        os.system('del /f /s /q ' + str(cid) + str(lista.index(i))+'.flv')
+        os.system('ffmpeg.exe -i '+str(cid)+str(lista.index(i))+'.flv '+str(cid)+str(lista.index(i))+ '.mp4')
+        os.rename(str(cid)+str(lista.index(i))+'.mp4',videoInfo['data']['title']+'分P'+pid+'第'+str(int(lista.index(i)+1))+'段.mp4')
+        os.remove(str(cid)+str(lista.index(i))+'.flv')
+
 
     
 
