@@ -2,64 +2,53 @@ import requests,http.cookiejar
 import json  
 import os,time
 import qrcode,tqdm
-def QRLogin():
-    if os.path.isfile('login.data'):
-        print('发现保存的登录依据,正在尝试登陆')
-        SESSDATA = open('login.data','r').read()
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0','Cookie':'SESSDATA='+SESSDATA}
-        user = requests.get('http://api.bilibili.com/nav',headers=headers).json()
-        print('成功:用户名:'+user['data']['uname'])
-        return SESSDATA
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0'
-    }
-    respone = requests.get('http://passport.bilibili.com/qrcode/getLoginUrl').json()
-    oauthKey = respone['data']['oauthKey']
-    QRimg = qrcode.make('https://passport.bilibili.com/qrcode/h5/login?oauthKey='+oauthKey)
-    QRimg.show(title='扫描完成后关闭')
-    print('检测到二维码窗口已经关闭,正在检测是否扫描或确认！')
-    for sec in range(0,10):
-        time.sleep(1)
-        print(sec)
+import tkinter
+from tkinter import ttk
+class biliLogin:
+    def QR(self):
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0'
+        }
+        respone = requests.get('http://passport.bilibili.com/qrcode/getLoginUrl').json()
+        oauthKey = respone['data']['oauthKey']
+        QRimg = qrcode.make('https://passport.bilibili.com/qrcode/h5/login?oauthKey='+oauthKey)
+        QRimg.show(title='扫描完成后关闭')
+        print('检测到二维码窗口已经关闭,正在检测是否扫描或确认！')
         auth = requests.post('http://passport.bilibili.com/qrcode/getLoginInfo',headers=headers,data={'oauthKey':oauthKey})
-        if auth.json()['code'] == 0:
-            print('200 OK AUTHED.')
-            with open('login.data','w') as data:
-                print('正在保存登录依据到login.data')
-                data.write(auth.cookies.get('SESSDATA'))
-                return auth.cookies.get('SESSDATA')
-            break
-        if sec == 10:
-            print('超时！10秒内未检测到您扫描二维码！') 
-            print('正在重新生成...')
-            QRLogin()      
+        if auth:
+            if auth.json()['code'] == 0:
+                print('200 OK AUTHED.')
+                with open('login.data','w') as data:
+                    print('正在保存登录依据到login.data')
+                    data.write(auth.cookies.get('SESSDATA'))
+                    return auth.cookies.get('SESSDATA')
+            else:
+                return False
+        else:
+            return False
+    
+    def loginData(self):
+        if os.path.isfile('login.data'):
+            SESSDATA = open('login.data','r').read()
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0','Cookie':'SESSDATA='+SESSDATA}
+            user = requests.get('http://api.bilibili.com/nav',headers=headers)
+            if user:
+                return SESSDATA
+            else:
+                return 'notlogin'
+        else:
+            return 'notlogin'   
+        
+                 
 
-def getVideo(SESSDATA):
+def getVideo(SESSDATA,vid,cid,qn):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0',
         'Cookie':'SESSDATA=' + SESSDATA,
         'Referer':'https://www.bilibili.com'
     }
-    vid = input('输入bv号，一定是bv号（因为我懒）:')
     videoInfo = requests.get('http://api.bilibili.com/x/web-interface/view?bvid='+vid,headers=headers).json()
     print('标题:'+videoInfo['data']['title'])
-    pid = input('输入分P:')
-    cid = videoInfo['data']['pages'][0]['cid']
-    print(cid)
-    qnlist = '''
-    代码  值  含义
-    6	240P 极速（仅mp4方式）
-    16	360P 流畅
-    32	480P 清晰
-    64	720P 高清（登录）
-    74	720P60 高清（大会员）
-    80	1080P 高清（登录）
-    112	1080P+ 高清（大会员）
-    116	1080P60 高清（大会员）
-    120	4K 超清（大会员）（需要fourk=1）
-    '''
-    print(qnlist)
-    qn = input('输入清晰度对应代码:')
     videoData = requests.get('http://api.bilibili.com/x/player/playurl?bvid=' + vid + '&cid=' + str(cid) + '&fourk=1' + '&qn=' + qn,headers=headers)
     lista = videoData.json()['data']['durl']
     print('开始下载....')
@@ -74,29 +63,87 @@ def getVideo(SESSDATA):
                     
         print('转码中...' + str(cid) + str(lista.index(i))+'.mp4')
         os.system('ffmpeg.exe -i '+str(cid)+str(lista.index(i))+'.flv '+str(cid)+str(lista.index(i))+ '.mp4')
-        os.rename(str(cid)+str(lista.index(i))+'.mp4',videoInfo['data']['title']+'分P'+pid+'第'+str(int(lista.index(i)+1))+'段.mp4')
+        os.rename(str(cid)+str(lista.index(i))+'.mp4',videoInfo['data']['title']+cid+'第'+str(int(lista.index(i)+1))+'段.mp4')
         os.remove(str(cid)+str(lista.index(i))+'.flv')
+def getVideoInfo(SESSDATA,bvid):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0',
+        'Cookie':'SESSDATA=' + SESSDATA,
+        'Referer':'https://www.bilibili.com'
+    }
+    videoInfo = requests.get('http://api.bilibili.com/x/web-interface/view?bvid='+bvid,headers=headers).json()
+    return videoInfo
 
+def gui(SESSDATA):
+    mainGui = tkinter.Tk()
+    mainGui.title('bilibili')
+    mainGui.geometry('300x500')
+    l1=tkinter.Label(mainGui,text='BV号:') 
+    l1.pack()
+    l2=tkinter.Label(mainGui,text='请选择分P:')
+    l3=tkinter.Label(mainGui,text='请选择清晰度:')
+    qntips=tkinter.Label(mainGui,text=qntip)
+    cidchoose=ttk.Combobox(mainGui)
+    qnchoose=ttk.Combobox(mainGui)
+    bvinput=tkinter.Entry()
+    bvinput['width']=250
+    bvinput.pack()
+    chooses=[]
+    cidlist=[]
+    def getdata():
+        bvid=bvinput.get()
+        if bvid:
+            data=getVideoInfo(SESSDATA,bvid)
+            videoNumber=data['data']['videos']
+            for i in range(1,int(videoNumber+1)):
+                chooses.append(str(i))
+                cidlist.append(data['data']['pages'][int(i-1)]['cid'])
+                print(chooses)
+            cidchoose['value']=chooses
+            cidchoose.current(0)
+            cidchoose['width']=250
+            l2.pack()
+            cidchoose.pack()
+            l3.pack()
+            b2.pack()
+            b1.pack_forget()
+    def getqnlist():
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0',
+                'Cookie':'SESSDATA=' + SESSDATA,
+                'Referer':'https://www.bilibili.com'
+            }
+            choose=cidchoose.get()
+            if choose:
+                videoqn=requests.get('https://api.bilibili.com/x/player/playurl?bvid='+bvinput.get()+'&cid='+str(cidlist[int(int(choose)-1)]),headers=headers).json()
+                qnlist=videoqn['data']['accept_quality']
+                qnchoose['value']=qnlist
+                qnchoose['width']=250
+                b2.pack_forget()
+                qnchoose.pack()
+                qntips.pack()
+                qnchoose.current(0)
+                b3.pack()
+    def download():
+        choose=qnchoose.get()
+        if choose:
+            bvid=bvinput.get()
+            cid=str(cidlist[int(int(cidchoose.get())-1)])
+            qn=str(qnchoose.get())
+            getVideo(SESSDATA,bvid,cid,qn)
+    b1=tkinter.Button(mainGui,text='获取',command=getdata)
+    b2=tkinter.Button(mainGui,text='点击获取清晰度列表',command=getqnlist) 
+    b3=tkinter.Button(mainGui,text='下载!',command=download)
+    b1['width']=250
+    b1.pack()
+    b2['width']=250
+    mainGui.mainloop()
 
     
 
 
 if __name__ == '__main__': 
     tips = '''
-                         //                                                                                     \n
-             \\         //                                                                                      \n 
-              \\       //                                                                                       \n
-        ##DDDDDDDDDDDDDDDDDDDDDD##                                                                              \n                         
-        ## DDDDDDDDDDDDDDDDDDDD ##   ________   ___   ___        ___   ________   ___   ___        ___          \n
-        ## hh                hh ##   |\   __  \ |\  \ |\  \      |\  \ |\   __  \ |\  \ |\  \      |\  \        \n
-        ## hh    //    \\    hh ##   \ \  \|\ /_\ \  \\ \  \     \ \  \\ \  \|\ /_\ \  \\ \  \     \ \  \       \n
-        ## hh   //      \\   hh ##    \ \   __  \\ \  \\ \  \     \ \  \\ \   __  \\ \  \\ \  \     \ \  \      \n 
-        ## hh                hh ##     \ \  \|\  \\ \  \\ \  \____ \ \  \\ \  \|\  \\ \  \\ \  \____ \ \  \     \n
-        ## hh      wwww      hh ##      \ \_______\\ \__\\ \_______\\ \__\\ \_______\\ \__\\ \_______\\ \__\    \n 
-        ## hh                hh ##       \|_______| \|__| \|_______| \|__| \|_______| \|__| \|_______| \|__|    \n
-        ## MMMMMMMMMMMMMMMMMMMM ##                                                                              \n
-        ##MMMMMMMMMMMMMMMMMMMMMM##                                                                              \n
-             \/            \/                   VIDEO   DOWNLOADER  BY  IMIN (GARBAGE)                          \n
     本python脚本由IMIN制作。QQ:3377911508. 本人只有14岁希望大家多多包涵。。
     感谢SocialSisterYi.
     在工作中使用了https://github.com/SocialSisterYi/bilibili-API-collect.
@@ -107,7 +154,23 @@ if __name__ == '__main__':
     在二维码扫描完成后关闭二维码窗口才能继续。
     （好像是因为qrimg.show会阻塞线程）
     '''
-    print(tips)
-    os.system('pause')
-    SESS=QRLogin()
-    getVideo(SESSDATA=SESS) 
+    canlogin=biliLogin().loginData()
+    qntip='''    
+    代码  值  含义
+    16	360P 流畅
+    32	480P 清晰
+    64	720P 高清（登录）
+    74	720P60 高清（大会员）
+    80	1080P 高清（登录）
+    112	1080P+ 高清（大会员）
+    116	1080P60 高清（大会员）
+    120	4K 超清（大会员）
+    '''
+    if not canlogin == 'notlogin':
+        SESS=canlogin
+        gui(SESSDATA=SESS)
+    else:
+        QRDATA = biliLogin().QR()
+        if not QRDATA == False:
+            SESS=QRDATA
+            gui(SESSDATA=SESS)
