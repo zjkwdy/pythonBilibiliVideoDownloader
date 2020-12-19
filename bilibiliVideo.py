@@ -13,19 +13,23 @@ class biliLogin:
         oauthKey = respone['data']['oauthKey']
         QRimg = qrcode.make('https://passport.bilibili.com/qrcode/h5/login?oauthKey='+oauthKey)
         QRimg.show(title='扫描完成后关闭')
-        print('检测到二维码窗口已经关闭,正在检测是否扫描或确认！')
-        auth = requests.post('http://passport.bilibili.com/qrcode/getLoginInfo',headers=headers,data={'oauthKey':oauthKey})
-        if auth:
-            if auth.json()['code'] == 0:
-                print('200 OK AUTHED.')
-                with open('login.data','w') as data:
-                    print('正在保存登录依据到login.data')
-                    data.write(auth.cookies.get('SESSDATA'))
-                    return auth.cookies.get('SESSDATA')
-            else:
-                return False
-        else:
-            return False
+        while True:
+            try:
+                time.sleep(2)
+                auth = requests.post('http://passport.bilibili.com/qrcode/getLoginInfo',headers=headers,data={'oauthKey':oauthKey})
+                if auth:
+                    if auth.json()['code'] == 0:
+                        print('200 OK AUTHED.')
+                        with open('login.data','w') as data:
+                            print('正在保存登录依据到login.data')
+                            data.write(auth.cookies.get('SESSDATA'))
+                            return auth.cookies.get('SESSDATA')
+                    else:
+                        return False
+                else:
+                    return False
+            except:
+                print('没登陆')
     
     def loginData(self):
         if os.path.isfile('login.data'):
@@ -61,10 +65,11 @@ def getVideo(SESSDATA,vid,cid,qn):
                 if chunk:
                     video.write(chunk)
                     
-        print('转码中...' + str(cid) + str(lista.index(i))+'.mp4')
-        os.system('ffmpeg.exe -i '+str(cid)+str(lista.index(i))+'.flv '+str(cid)+str(lista.index(i))+ '.mp4')
-        os.rename(str(cid)+str(lista.index(i))+'.mp4',videoInfo['data']['title']+cid+'第'+str(int(lista.index(i)+1))+'段.mp4')
-        os.remove(str(cid)+str(lista.index(i))+'.flv')
+        #print('转码中...' + str(cid) + str(lista.index(i))+'.mp4')
+        #os.system('ffmpeg.exe -i '+str(cid)+str(lista.index(i))+'.flv '+str(cid)+str(lista.index(i))+ '.mp4')
+        os.rename(str(cid)+str(lista.index(i))+'.flv',videoInfo['data']['title']+cid+'第'+str(int(lista.index(i)+1))+'段.flv')
+        #os.remove(str(cid)+str(lista.index(i))+'.flv')
+    exit()
 def getVideoInfo(SESSDATA,bvid):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0',
