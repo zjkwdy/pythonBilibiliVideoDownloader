@@ -3,6 +3,7 @@ import json
 import os,time
 import qrcode,tqdm
 import tkinter
+from tkinter import messagebox
 from tkinter import ttk
 class biliLogin:
     def QR(self):
@@ -12,16 +13,28 @@ class biliLogin:
         respone = requests.get('http://passport.bilibili.com/qrcode/getLoginUrl').json()
         oauthKey = respone['data']['oauthKey']
         QRimg = qrcode.make('https://passport.bilibili.com/qrcode/h5/login?oauthKey='+oauthKey)
-        QRimg.show(title='扫描完成后关闭')
+        QRimg.save('loginqr.png','PNG')
+        loginroot=tkinter.Tk()
+        def conScan():
+            messagebox.askokcancel('确认？','请确认已经扫码并确认')
+            loginroot.destroy()
+        textLabel = tkinter.Label(loginroot,text="请使用bilibili手机版扫描二维码确认",justify=tkinter.LEFT)
+        conB=tkinter.Button(loginroot,text='我已扫码并确认',justify=tkinter.LEFT,command=conScan,bg='green')
+        conB['width']=100
+        conB.pack(side=tkinter.BOTTOM)
+        qrshow=tkinter.PhotoImage(file='loginqr.png')
+        ScanQrLabel=tkinter.Label(loginroot,image=qrshow)
+        textLabel.pack(side=tkinter.LEFT)
+        ScanQrLabel.pack(side=tkinter.RIGHT)
+        loginroot.mainloop()
+        os.remove('loginqr.png')
         while True:
             try:
-                time.sleep(2)
                 auth = requests.post('http://passport.bilibili.com/qrcode/getLoginInfo',headers=headers,data={'oauthKey':oauthKey})
                 if auth:
                     if auth.json()['code'] == 0:
                         print('200 OK AUTHED.')
                         with open('login.data','w') as data:
-                            print('正在保存登录依据到login.data')
                             data.write(auth.cookies.get('SESSDATA'))
                             return auth.cookies.get('SESSDATA')
                     else:
@@ -29,8 +42,10 @@ class biliLogin:
                 else:
                     return False
             except:
-                print('没登陆')
-    
+                print('妹登陆，在退出了')
+                messagebox.showerror('在？','妹扫码就关窗口宁生怕我登录呗')
+                exit()
+            time.sleep(2)
     def loginData(self):
         if os.path.isfile('login.data'):
             SESSDATA = open('login.data','r').read()
@@ -83,6 +98,13 @@ def gui(SESSDATA):
     mainGui = tkinter.Tk()
     mainGui.title('bilibili')
     mainGui.geometry('300x500')
+    def logoff():
+        os.remove('login.data')
+        messagebox.showinfo('ok','ok')
+        exit()
+    b_logoff=tkinter.Button(mainGui,text='删除登录信息',command=logoff,bg='red')
+    b_logoff['width']=250
+    b_logoff.pack()
     l1=tkinter.Label(mainGui,text='BV号:') 
     l1.pack()
     l2=tkinter.Label(mainGui,text='请选择分P:')
@@ -90,7 +112,7 @@ def gui(SESSDATA):
     qntips=tkinter.Label(mainGui,text=qntip)
     cidchoose=ttk.Combobox(mainGui)
     qnchoose=ttk.Combobox(mainGui)
-    bvinput=tkinter.Entry()
+    bvinput=tkinter.Entry(mainGui)
     bvinput['width']=250
     bvinput.pack()
     chooses=[]
@@ -142,6 +164,7 @@ def gui(SESSDATA):
     b1['width']=250
     b1.pack()
     b2['width']=250
+    b3['width']=250
     mainGui.mainloop()
 
     
